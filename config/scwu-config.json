@@ -1,0 +1,18 @@
+{
+    "version": "1.0.0",
+    "author": "ShaneCodes",
+    "utility_name": "ShaneCodes Windows Utilman",
+    "base_url": "https://raw.githubusercontent.com/yourusername/shane-windows-utilman/main/",
+    "software_categories": [
+        "Productivity",
+        "Development",
+        "Multimedia",
+        "Utilities",
+        "Communication",
+        "Security",
+        "Gaming"
+    ],
+    "preferred_installers": ["winget", "chocolatey", "direct"],
+    "log_level": "INFO",
+    "auto_update_check": true
+}

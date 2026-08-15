@@ -1,0 +1,82 @@
+[
+    {
+        "name": "Visual Studio Code",
+        "description": "Code editing. Redefined.",
+        "category": "Development",
+        "winget_id": "Microsoft.VisualStudioCode",
+        "choco_id": "vscode",
+        "icon": "https://code.visualstudio.com/assets/favicon.ico"
+    },
+    {
+        "name": "7-Zip",
+        "description": "File archiver with a high compression ratio",
+        "category": "Utilities",
+        "winget_id": "7zip.7zip",
+        "choco_id": "7zip",
+        "download_url": "https://www.7-zip.org/a/7z2409-x64.exe",
+        "silent_args": "/S"
+    },
+    {
+        "name": "Spotify",
+        "description": "Music streaming service",
+        "category": "Multimedia",
+        "winget_id": "Spotify.Spotify",
+        "choco_id": "spotify"
+    },
+    {
+        "name": "Git",
+        "description": "Distributed version control system",
+        "category": "Development",
+        "winget_id": "Git.Git",
+        "choco_id": "git"
+    },
+    {
+        "name": "Notepad++",
+        "description": "A free source code editor",
+        "category": "Development",
+        "winget_id": "Notepad++.Notepad++",
+        "choco_id": "notepadplusplus"
+    },
+    {
+        "name": "Discord",
+        "description": "Chat for communities and friends",
+        "category": "Communication",
+        "winget_id": "Discord.Discord",
+        "choco_id": "discord"
+    },
+    {
+        "name": "OBS Studio",
+        "description": "Free and open source software for video recording and live streaming",
+        "category": "Multimedia",
+        "winget_id": "OBSProject.OBSStudio",
+        "choco_id": "obs-studio"
+    },
+    {
+        "name": "Wireshark",
+        "description": "Network protocol analyzer",
+        "category": "Security",
+        "winget_id": "WiresharkFoundation.Wireshark",
+        "choco_id": "wireshark"
+    },
+    {
+        "name": "Steam",
+        "description": "Digital distribution platform for games",
+        "category": "Gaming",
+        "winget_id": "Valve.Steam",
+        "choco_id": "steam"
+    },
+    {
+        "name": "Everything",
+        "description": "Instant file search tool",
+        "category": "Utilities",
+        "winget_id": "voidtools.Everything",
+        "choco_id": "everything"
+    },
+    {
+        "name": "PowerToys",
+        "description": "Microsoft PowerToys for Windows",
+        "category": "Utilities",
+        "winget_id": "Microsoft.PowerToys",
+        "choco_id": "powertoys"
+    }
+]

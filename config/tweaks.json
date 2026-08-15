@@ -1,0 +1,121 @@
+{
+    "Performance": {
+        "description": "Performance-optimizing tweaks",
+        "tweaks": [
+            {
+                "name": "Disable Visual Effects",
+                "description": "Disables animations and visual effects for better performance",
+                "type": "Registry",
+                "registry_path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects",
+                "value_name": "VisualFXSetting",
+                "value_data": 2,
+                "value_type": "DWord"
+            },
+            {
+                "name": "Adjust Processor Scheduling",
+                "description": "Prioritize programs over background services",
+                "type": "Registry",
+                "registry_path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl",
+                "value_name": "Win32PrioritySeparation",
+                "value_data": 26,
+                "value_type": "DWord"
+            },
+            {
+                "name": "Enable Hardware Acceleration",
+                "description": "Enables hardware acceleration for better graphics performance",
+                "type": "Registry",
+                "registry_path": "HKCU:\\Software\\Microsoft\\Avalon.Graphics",
+                "value_name": "HardwareAcceleration",
+                "value_data": 1,
+                "value_type": "DWord"
+            }
+        ]
+    },
+    "Privacy": {
+        "description": "Privacy-enhancing tweaks",
+        "tweaks": [
+            {
+                "name": "Disable Telemetry",
+                "description": "Disables Windows telemetry data collection",
+                "type": "Registry",
+                "registry_path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+                "value_name": "AllowTelemetry",
+                "value_data": 0,
+                "value_type": "DWord"
+            },
+            {
+                "name": "Disable Cortana",
+                "description": "Disables Cortana virtual assistant",
+                "type": "Registry",
+                "registry_path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+                "value_name": "AllowCortana",
+                "value_data": 0,
+                "value_type": "DWord"
+            },
+            {
+                "name": "Disable Activity History",
+                "description": "Disables Windows activity history tracking",
+                "type": "Registry",
+                "registry_path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+                "value_name": "EnableActivityFeed",
+                "value_data": 0,
+                "value_type": "DWord"
+            }
+        ]
+    },
+    "Interface": {
+        "description": "User interface customizations",
+        "tweaks": [
+            {
+                "name": "Show File Extensions",
+                "description": "Shows file extensions in File Explorer",
+                "type": "Registry",
+                "registry_path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+                "value_name": "HideFileExt",
+                "value_data": 0,
+                "value_type": "DWord"
+            },
+            {
+                "name": "Show Hidden Files",
+                "description": "Shows hidden files and folders in File Explorer",
+                "type": "Registry",
+                "registry_path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+                "value_name": "Hidden",
+                "value_data": 1,
+                "value_type": "DWord"
+            },
+            {
+                "name": "Taskbar Small Icons",
+                "description": "Uses small icons on the taskbar",
+                "type": "Registry",
+                "registry_path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+                "value_name": "TaskbarSmallIcons",
+                "value_data": 1,
+                "value_type": "DWord"
+            }
+        ]
+    },
+    "Security": {
+        "description": "Security-hardening tweaks",
+        "tweaks": [
+            {
+                "name": "Disable Remote Desktop",
+                "description": "Disables Remote Desktop services",
+                "type": "Registry",
+                "registry_path": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server",
+                "value_name": "fDenyTSConnections",
+                "value_data": 1,
+                "value_type": "DWord"
+            },
+            {
+                "name": "Disable Windows Script Host",
+                "description": "Disables VBScript and JScript execution",
+                "type": "Registry",
+                "registry_path": "HKCU:\\Software\\Microsoft\\Windows Script Host\\Settings",
+                "value_name": "Enabled",
+                "value_data": 0,
+                "value_type": "DWord"
+            }
+        ]
+    }
+}
