@@ -4,8 +4,7 @@
         "description": "Code editing. Redefined.",
         "category": "Development",
         "winget_id": "Microsoft.VisualStudioCode",
-        "choco_id": "vscode",
-        "icon": "https://code.visualstudio.com/assets/favicon.ico"
+        "choco_id": "vscode"
     },
     {
         "name": "7-Zip",

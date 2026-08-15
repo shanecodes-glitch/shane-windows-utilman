@@ -10,7 +10,7 @@
     
     .AUTHOR
         ShaneCodes
-        Repository: https://github.com/yourusername/shane-windows-utilman
+        Repository: https://github.com/shanecodes-glitch/shane-windows-utilman
     
     .VERSION
         1.0.0
@@ -26,11 +26,11 @@
 # GLOBAL CONFIGURATION
 # ============================================================
 
-# THESE ARE THE URLS YOU'LL CHANGE TO YOUR OWN REPO!
+# THESE URLS ARE NOW CONFIGURED FOR YOUR REPOSITORY!
 # ============================================================
 $global:SCWU_Config = @{
-    # Your GitHub raw URLs - CHANGE THESE TO YOUR REPO!
-    BaseUrl = "https://raw.githubusercontent.com/yourusername/shane-windows-utilman/main/"
+    # Your GitHub raw URLs - NOW POINTING TO YOUR REPO
+    BaseUrl = "https://raw.githubusercontent.com/shanecodes-glitch/shane-windows-utilman/main/"
     
     # Configuration files
     ConfigFile   = "config/scwu-config.json"
