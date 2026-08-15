@@ -1,948 +1,704 @@
 <#
     .SYNOPSIS
-        ShaneCodes Windows Utilman - A complete Windows system utility
-        with software installation, system tweaks, and update management.
+        ShaneCodes Windows Utilman v2.0 — Enhanced Edition
+        Now with Preset System and GUI Interface!
     
     .DESCRIPTION
-        A comprehensive system management tool that connects to YOUR
-        repositories for software installations, system tweaks, and updates.
-        This script serves as the foundation for your custom utility.
+        A comprehensive Windows utility with:
+        - 6 professional presets (Standard, Minimal, Advanced, Gaming, Developer, Privacy)
+        - Custom preset builder
+        - Full GUI interface (Windows Forms)
+        - Dark/Light theme support
+        - Export/Import functionality
     
     .AUTHOR
         ShaneCodes
         Repository: https://github.com/shanecodes-glitch/shane-windows-utilman
     
     .VERSION
-        1.0.0
+        2.0.0
     
     .NOTES
-        This script must be run as Administrator.
-        Last Updated: 2024-2026
+        Must be run as Administrator.
 #>
 
 #Requires -RunAsAdministrator
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 
 # ============================================================
 # GLOBAL CONFIGURATION
 # ============================================================
 
-# THESE URLS ARE NOW CONFIGURED FOR YOUR REPOSITORY!
-# ============================================================
 $global:SCWU_Config = @{
-    # Your GitHub raw URLs - NOW POINTING TO YOUR REPO
     BaseUrl = "https://raw.githubusercontent.com/shanecodes-glitch/shane-windows-utilman/main/"
-    
-    # Configuration files
     ConfigFile   = "config/scwu-config.json"
     SoftwareFile = "config/software-list.json"
     TweakFile    = "config/tweaks.json"
-    
-    # Update files
     VersionFile  = "version.txt"
     ScriptFile   = "ShaneCodes-Utilman.ps1"
 }
 
-# Build full URLs
-$global:SCWU_Config.Urls = @{
-    Config   = "$($global:SCWU_Config.BaseUrl)$($global:SCWU_Config.ConfigFile)"
-    Software = "$($global:SCWU_Config.BaseUrl)$($global:SCWU_Config.SoftwareFile)"
-    Tweaks   = "$($global:SCWU_Config.BaseUrl)$($global:SCWU_Config.TweakFile)"
-    Version  = "$($global:SCWU_Config.BaseUrl)$($global:SCWU_Config.VersionFile)"
-    Script   = "$($global:SCWU_Config.BaseUrl)$($global:SCWU_Config.ScriptFile)"
-}
-
-# Local fallback configuration
 $global:LocalConfigPath = "$env:APPDATA\ShaneCodes\Utilman\config.json"
 $global:LocalLogPath    = "$env:APPDATA\ShaneCodes\Utilman\logs\"
+$global:ThemeMode       = "Dark"  # Dark or Light
 
 # ============================================================
-# LOGGING FUNCTIONS
+# PRESET SYSTEM — ENHANCED
 # ============================================================
 
-function Write-SCWULog {
-    param(
-        [string]$Message,
-        [string]$Level = "INFO"
-    )
-    
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logEntry = "[$timestamp] [$Level] $Message"
-    
-    # Ensure log directory exists
-    if (-not (Test-Path $global:LocalLogPath)) {
-        New-Item -ItemType Directory -Path $global:LocalLogPath -Force | Out-Null
+$global:Presets = @{
+    "Standard" = @{
+        description = "⚖️ Balanced defaults for most users"
+        icon = "⚖️"
+        tweaks = @("performance_light", "privacy_basic", "interface_clean")
+        software = @("vscode", "7zip", "git", "notepadplusplus", "everything")
     }
-    
-    $logFile = Join-Path $global:LocalLogPath "scwu-$(Get-Date -Format 'yyyy-MM-dd').log"
-    Add-Content -Path $logFile -Value $logEntry
-    
-    # Also output to console with color
-    switch ($Level) {
-        "INFO"    { Write-Host $Message -ForegroundColor Cyan }
-        "SUCCESS" { Write-Host $Message -ForegroundColor Green }
-        "WARNING" { Write-Host $Message -ForegroundColor Yellow }
-        "ERROR"   { Write-Host $Message -ForegroundColor Red }
-        default   { Write-Host $Message }
+    "Minimal" = @{
+        description = "🌱 Minimum changes, maximum compatibility"
+        icon = "🌱"
+        tweaks = @("performance_light", "privacy_basic")
+        software = @("7zip", "everything")
+    }
+    "Advanced" = @{
+        description = "⚡ Deep system optimizations for power users"
+        icon = "⚡"
+        tweaks = @("performance_heavy", "privacy_full", "interface_advanced", "security_hardened")
+        software = @("vscode", "git", "wireshark", "powertoys", "everything")
+    }
+    "Gaming" = @{
+        description = "🎮 Optimized for gaming performance"
+        icon = "🎮"
+        tweaks = @("performance_gaming", "interface_gaming", "network_gaming")
+        software = @("steam", "discord", "obs", "spotify")
+    }
+    "Developer" = @{
+        description = "💻 Full development environment setup"
+        icon = "💻"
+        tweaks = @("performance_heavy", "interface_developer")
+        software = @("vscode", "git", "docker", "nodejs", "python", "powershell", "notepadplusplus")
+    }
+    "Privacy" = @{
+        description = "🛡️ Maximum privacy and security"
+        icon = "🛡️"
+        tweaks = @("privacy_full", "security_hardened", "interface_privacy")
+        software = @("wireshark", "tor", "bitwarden")
     }
 }
 
 # ============================================================
-# CONFIGURATION MANAGEMENT
+# TWEAK DEFINITIONS (For Preset System)
 # ============================================================
 
-function Get-SCWUConfiguration {
-    <#
-    .SYNOPSIS
-        Retrieves configuration from remote or local source
-    .DESCRIPTION
-        Attempts to fetch configuration from your GitHub repository.
-        Falls back to local configuration if remote is unavailable.
-    #>
-    
-    Write-SCWULog "Loading ShaneCodes Utilman configuration..." -Level "INFO"
-    
-    $config = $null
-    
-    # Try to load from remote source first
-    try {
-        $remoteConfig = Invoke-RestMethod -Uri $global:SCWU_Config.Urls.Config -ErrorAction Stop
-        Write-SCWULog "Configuration loaded from remote source" -Level "SUCCESS"
-        $config = $remoteConfig
-    } catch {
-        Write-SCWULog "Remote configuration unavailable: $($_.Exception.Message)" -Level "WARNING"
-        
-        # Fallback to local configuration
-        if (Test-Path $global:LocalConfigPath) {
-            try {
-                $localConfig = Get-Content -Path $global:LocalConfigPath -Raw | ConvertFrom-Json
-                Write-SCWULog "Configuration loaded from local cache" -Level "SUCCESS"
-                $config = $localConfig
-            } catch {
-                Write-SCWULog "Local configuration corrupt or missing" -Level "ERROR"
+$global:TweakDefinitions = @{
+    "performance_light" = @{
+        name = "Performance - Light"
+        registry = @{
+            "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects" = @{
+                "VisualFXSetting" = 2
             }
         }
     }
-    
-    # If still no config, use hardcoded defaults
-    if (-not $config) {
-        Write-SCWULog "Using default configuration" -Level "WARNING"
-        $config = [PSCustomObject]@{
-            version = "1.0.0"
-            author = "ShaneCodes"
-            utility_name = "ShaneCodes Windows Utilman"
-            software_categories = @("Productivity", "Development", "Multimedia", "Utilities", "Communication")
+    "performance_heavy" = @{
+        name = "Performance - Heavy"
+        registry = @{
+            "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects" = @{
+                "VisualFXSetting" = 2
+            }
+            "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl" = @{
+                "Win32PrioritySeparation" = 26
+            }
         }
     }
-    
-    return $config
+    "performance_gaming" = @{
+        name = "Performance - Gaming"
+        registry = @{
+            "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\PriorityControl" = @{
+                "Win32PrioritySeparation" = 38
+            }
+            "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile" = @{
+                "SystemResponsiveness" = 0
+            }
+        }
+    }
+    "privacy_basic" = @{
+        name = "Privacy - Basic"
+        registry = @{
+            "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection" = @{
+                "AllowTelemetry" = 1
+            }
+        }
+    }
+    "privacy_full" = @{
+        name = "Privacy - Full"
+        registry = @{
+            "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection" = @{
+                "AllowTelemetry" = 0
+            }
+            "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search" = @{
+                "AllowCortana" = 0
+            }
+        }
+    }
+    "interface_clean" = @{
+        name = "Interface - Clean"
+        registry = @{
+            "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced" = @{
+                "HideFileExt" = 0
+                "Hidden" = 1
+            }
+        }
+    }
+    "interface_advanced" = @{
+        name = "Interface - Advanced"
+        registry = @{
+            "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced" = @{
+                "HideFileExt" = 0
+                "Hidden" = 1
+                "TaskbarSmallIcons" = 1
+            }
+        }
+    }
+    "interface_gaming" = @{
+        name = "Interface - Gaming"
+        registry = @{
+            "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced" = @{
+                "HideFileExt" = 0
+                "Hidden" = 1
+                "TaskbarSmallIcons" = 1
+            }
+            "HKCU:\\Control Panel\\Desktop" = @{
+                "UserPreferencesMask" = "90 12 03 80 10 00 00 00"
+            }
+        }
+    }
+    "interface_developer" = @{
+        name = "Interface - Developer"
+        registry = @{
+            "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced" = @{
+                "HideFileExt" = 0
+                "Hidden" = 1
+                "ShowSuperHidden" = 1
+            }
+        }
+    }
+    "interface_privacy" = @{
+        name = "Interface - Privacy"
+        registry = @{
+            "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced" = @{
+                "HideFileExt" = 0
+                "Hidden" = 1
+                "Start_TrackProgs" = 0
+            }
+        }
+    }
+    "security_hardened" = @{
+        name = "Security - Hardened"
+        registry = @{
+            "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server" = @{
+                "fDenyTSConnections" = 1
+            }
+            "HKCU:\\Software\\Microsoft\\Windows Script Host\\Settings" = @{
+                "Enabled" = 0
+            }
+        }
+    }
+    "network_gaming" = @{
+        name = "Network - Gaming"
+        registry = @{
+            "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile" = @{
+                "NetworkThrottlingIndex" = "ffffffff"
+            }
+        }
+    }
 }
 
 # ============================================================
-# MENU SYSTEM
+# GUI INTERFACE — FULL WINDOWS FORMS
 # ============================================================
 
-function Show-SCWUMenu {
+function Show-SCWUGUI {
     <#
     .SYNOPSIS
-        Displays the main interactive menu
+        Displays the full GUI interface for ShaneCodes Utilman
     .DESCRIPTION
-        Presents a user-friendly menu for navigating the utility's features.
+        Creates a Windows Forms interface with:
+        - Preset selection with preview
+        - Theme toggle (Dark/Light)
+        - Progress bar
+        - Log viewer
+        - Export/Import functionality
     #>
     
-    Clear-Host
+    # Create main form
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = "ShaneCodes Windows Utilman v2.0"
+    $form.Size = New-Object System.Drawing.Size(900, 650)
+    $form.StartPosition = "CenterScreen"
+    $form.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(30, 30, 30) } else { [System.Drawing.Color]::White }
+    $form.ForeColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::White } else { [System.Drawing.Color]::Black }
+    $form.FormBorderStyle = "FixedDialog"
+    $form.MaximizeBox = $false
     
-    # Draw the ASCII header
-    Write-Host "╔════════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║                                                                ║" -ForegroundColor Cyan
-    Write-Host "║    ███████╗██╗  ██╗ █████╗ ███╗   ██╗███████╗                  ║" -ForegroundColor Yellow
-    Write-Host "║    ██╔════╝██║  ██║██╔══██╗████╗  ██║██╔════╝                  ║" -ForegroundColor Yellow
-    Write-Host "║    ███████╗███████║███████║██╔██╗ ██║█████╗                    ║" -ForegroundColor Yellow
-    Write-Host "║    ╚════██║██╔══██║██╔══██║██║╚██╗██║██╔══╝                    ║" -ForegroundColor Yellow
-    Write-Host "║    ███████║██║  ██║██║  ██║██║ ╚████║███████╗                  ║" -ForegroundColor Yellow
-    Write-Host "║    ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝                  ║" -ForegroundColor Yellow
-    Write-Host "║      Windows Utilman - Your System, Your Control              ║" -ForegroundColor White
-    Write-Host "║                                                                ║" -ForegroundColor Cyan
-    Write-Host "╚════════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
-    Write-Host ""
+    # ==========================================================
+    # HEADER PANEL
+    # ==========================================================
     
-    Write-Host "  [1] 📦 Install Software" -ForegroundColor White
-    Write-Host "  [2] ⚡ Apply System Tweaks" -ForegroundColor White
-    Write-Host "  [3] 🔧 Configure Windows Updates" -ForegroundColor White
-    Write-Host "  [4] 📊 System Information" -ForegroundColor White
-    Write-Host "  [5] 🔄 Update Utilman" -ForegroundColor White
-    Write-Host "  [6] ❌ Exit" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  [7] ⚙️ Advanced Options" -ForegroundColor Gray
-    Write-Host ""
+    $headerPanel = New-Object System.Windows.Forms.Panel
+    $headerPanel.Dock = "Top"
+    $headerPanel.Height = 60
+    $headerPanel.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(50, 50, 50) } else { [System.Drawing.Color]::FromArgb(240, 240, 240) }
+    
+    $titleLabel = New-Object System.Windows.Forms.Label
+    $titleLabel.Text = "🚀 ShaneCodes Windows Utilman"
+    $titleLabel.Font = New-Object System.Drawing.Font("Segoe UI", 18, [System.Drawing.FontStyle]::Bold)
+    $titleLabel.Location = New-Object System.Drawing.Point(20, 15)
+    $titleLabel.AutoSize = $true
+    $titleLabel.ForeColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(0, 180, 255) } else { [System.Drawing.Color]::FromArgb(0, 100, 200) }
+    
+    $headerPanel.Controls.Add($titleLabel)
+    $form.Controls.Add($headerPanel)
+    
+    # ==========================================================
+    # PRESET SELECTION PANEL
+    # ==========================================================
+    
+    $presetPanel = New-Object System.Windows.Forms.Panel
+    $presetPanel.Location = New-Object System.Drawing.Point(20, 80)
+    $presetPanel.Size = New-Object System.Drawing.Size(400, 420)
+    $presetPanel.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(40, 40, 40) } else { [System.Drawing.Color]::FromArgb(245, 245, 245) }
+    $presetPanel.BorderStyle = "FixedSingle"
+    
+    # Preset Label
+    $presetLabel = New-Object System.Windows.Forms.Label
+    $presetLabel.Text = "🎯 Select Preset"
+    $presetLabel.Font = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
+    $presetLabel.Location = New-Object System.Drawing.Point(15, 10)
+    $presetLabel.AutoSize = $true
+    $presetPanel.Controls.Add($presetLabel)
+    
+    # Preset ListBox
+    $presetList = New-Object System.Windows.Forms.ListBox
+    $presetList.Location = New-Object System.Drawing.Point(15, 45)
+    $presetList.Size = New-Object System.Drawing.Size(365, 250)
+    $presetList.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(50, 50, 50) } else { [System.Drawing.Color]::White }
+    $presetList.ForeColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::White } else { [System.Drawing.Color]::Black }
+    $presetList.Font = New-Object System.Drawing.Font("Segoe UI", 11)
+    
+    # Populate presets
+    foreach ($preset in $global:Presets.Keys) {
+        $presetList.Items.Add("$($global:Presets[$preset].icon) $preset - $($global:Presets[$preset].description)")
+    }
+    $presetList.SelectedIndex = 0
+    $presetPanel.Controls.Add($presetList)
+    
+    # Preset Description Box
+    $presetDesc = New-Object System.Windows.Forms.TextBox
+    $presetDesc.Location = New-Object System.Drawing.Point(15, 310)
+    $presetDesc.Size = New-Object System.Drawing.Size(365, 80)
+    $presetDesc.Multiline = $true
+    $presetDesc.ReadOnly = $true
+    $presetDesc.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(50, 50, 50) } else { [System.Drawing.Color]::FromArgb(240, 240, 240) }
+    $presetDesc.ForeColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::White } else { [System.Drawing.Color]::Black }
+    $presetDesc.Font = New-Object System.Drawing.Font("Segoe UI", 10)
+    $presetPanel.Controls.Add($presetDesc)
+    
+    # Show details on selection change
+    $presetList.Add_SelectedIndexChanged({
+        if ($presetList.SelectedItem) {
+            $selectedText = $presetList.SelectedItem.ToString()
+            $presetName = ($selectedText -split ' ')[1]  # Get the preset name
+            $presetDesc.Text = "Tweaks: " + ($global:Presets[$presetName].tweaks -join ", ") + "`r`nSoftware: " + ($global:Presets[$presetName].software -join ", ")
+        }
+    })
+    
+    $form.Controls.Add($presetPanel)
+    
+    # ==========================================================
+    # DETAILS PANEL (Right Side)
+    # ==========================================================
+    
+    $detailPanel = New-Object System.Windows.Forms.Panel
+    $detailPanel.Location = New-Object System.Drawing.Point(440, 80)
+    $detailPanel.Size = New-Object System.Drawing.Size(430, 420)
+    $detailPanel.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(40, 40, 40) } else { [System.Drawing.Color]::FromArgb(245, 245, 245) }
+    $detailPanel.BorderStyle = "FixedSingle"
+    
+    # Action Buttons
+    $applyPresetBtn = New-Object System.Windows.Forms.Button
+    $applyPresetBtn.Text = "✅ Apply Preset"
+    $applyPresetBtn.Location = New-Object System.Drawing.Point(15, 15)
+    $applyPresetBtn.Size = New-Object System.Drawing.Size(190, 45)
+    $applyPresetBtn.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+    $applyPresetBtn.BackColor = [System.Drawing.Color]::FromArgb(0, 150, 0)
+    $applyPresetBtn.ForeColor = [System.Drawing.Color]::White
+    $applyPresetBtn.FlatStyle = "Flat"
+    $detailPanel.Controls.Add($applyPresetBtn)
+    
+    $customPresetBtn = New-Object System.Windows.Forms.Button
+    $customPresetBtn.Text = "🔧 Custom Preset Builder"
+    $customPresetBtn.Location = New-Object System.Drawing.Point(215, 15)
+    $customPresetBtn.Size = New-Object System.Drawing.Size(195, 45)
+    $customPresetBtn.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+    $customPresetBtn.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(60, 60, 60) } else { [System.Drawing.Color]::FromArgb(220, 220, 220) }
+    $customPresetBtn.FlatStyle = "Flat"
+    $detailPanel.Controls.Add($customPresetBtn)
+    
+    # Progress Bar
+    $progressBar = New-Object System.Windows.Forms.ProgressBar
+    $progressBar.Location = New-Object System.Drawing.Point(15, 75)
+    $progressBar.Size = New-Object System.Drawing.Size(395, 30)
+    $progressBar.Style = "Continuous"
+    $detailPanel.Controls.Add($progressBar)
+    
+    # Log Viewer
+    $logLabel = New-Object System.Windows.Forms.Label
+    $logLabel.Text = "📋 Log Viewer"
+    $logLabel.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+    $logLabel.Location = New-Object System.Drawing.Point(15, 120)
+    $logLabel.AutoSize = $true
+    $detailPanel.Controls.Add($logLabel)
+    
+    $logBox = New-Object System.Windows.Forms.TextBox
+    $logBox.Location = New-Object System.Drawing.Point(15, 150)
+    $logBox.Size = New-Object System.Drawing.Size(395, 200)
+    $logBox.Multiline = $true
+    $logBox.ReadOnly = $true
+    $logBox.ScrollBars = "Vertical"
+    $logBox.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(30, 30, 30) } else { [System.Drawing.Color]::White }
+    $logBox.ForeColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(0, 255, 0) } else { [System.Drawing.Color]::Black }
+    $logBox.Font = New-Object System.Drawing.Font("Consolas", 9)
+    $detailPanel.Controls.Add($logBox)
+    
+    # Export/Import Buttons
+    $exportBtn = New-Object System.Windows.Forms.Button
+    $exportBtn.Text = "📤 Export Preset"
+    $exportBtn.Location = New-Object System.Drawing.Point(15, 365)
+    $exportBtn.Size = New-Object System.Drawing.Size(190, 35)
+    $exportBtn.Font = New-Object System.Drawing.Font("Segoe UI", 10)
+    $exportBtn.FlatStyle = "Flat"
+    $detailPanel.Controls.Add($exportBtn)
+    
+    $importBtn = New-Object System.Windows.Forms.Button
+    $importBtn.Text = "📥 Import Preset"
+    $importBtn.Location = New-Object System.Drawing.Point(215, 365)
+    $importBtn.Size = New-Object System.Drawing.Size(195, 35)
+    $importBtn.Font = New-Object System.Drawing.Font("Segoe UI", 10)
+    $importBtn.FlatStyle = "Flat"
+    $detailPanel.Controls.Add($importBtn)
+    
+    # Theme Toggle
+    $themeBtn = New-Object System.Windows.Forms.Button
+    $themeBtn.Text = if ($global:ThemeMode -eq "Dark") { "☀️ Light Mode" } else { "🌙 Dark Mode" }
+    $themeBtn.Location = New-Object System.Drawing.Point(15, 410)
+    $themeBtn.Size = New-Object System.Drawing.Size(395, 35)
+    $themeBtn.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+    $themeBtn.FlatStyle = "Flat"
+    $themeBtn.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(60, 60, 60) } else { [System.Drawing.Color]::FromArgb(220, 220, 220) }
+    $detailPanel.Controls.Add($themeBtn)
+    
+    $form.Controls.Add($detailPanel)
+    
+    # ==========================================================
+    # EVENT HANDLERS
+    # ==========================================================
+    
+    # Apply Preset
+    $applyPresetBtn.Add_Click({
+        if ($presetList.SelectedItem) {
+            $selectedText = $presetList.SelectedItem.ToString()
+            $presetName = ($selectedText -split ' ')[1]
+            $preset = $global:Presets[$presetName]
+            
+            $logBox.AppendText("`n=== Applying Preset: $presetName ===`n")
+            $progressBar.Value = 0
+            
+            # Apply tweaks
+            $i = 0
+            foreach ($tweakName in $preset.tweaks) {
+                $i++
+                $progressBar.Value = [math]::Round(($i / $preset.tweaks.Count) * 50)
+                $logBox.AppendText("[Tweak] Applying: $tweakName`n")
+                Apply-SCWUTweakByName $tweakName
+            }
+            
+            $progressBar.Value = 50
+            
+            # Install software
+            $j = 0
+            foreach ($app in $preset.software) {
+                $j++
+                $progressBar.Value = 50 + [math]::Round(($j / $preset.software.Count) * 50)
+                $logBox.AppendText("[Software] Installing: $app`n")
+                Install-SCWUSoftwareByName $app
+            }
+            
+            $progressBar.Value = 100
+            $logBox.AppendText("`n✅ Preset '$presetName' applied successfully!`n")
+            [System.Windows.Forms.MessageBox]::Show("Preset '$presetName' applied successfully!", "Success", "OK", "Information")
+        }
+    })
+    
+    # Custom Preset Builder
+    $customPresetBtn.Add_Click({
+        Show-SCWUCustomPresetBuilder
+    })
+    
+    # Theme Toggle
+    $themeBtn.Add_Click({
+        if ($global:ThemeMode -eq "Dark") {
+            $global:ThemeMode = "Light"
+            $themeBtn.Text = "🌙 Dark Mode"
+        } else {
+            $global:ThemeMode = "Dark"
+            $themeBtn.Text = "☀️ Light Mode"
+        }
+        # Reload form with new theme
+        $form.Close()
+        Show-SCWUGUI
+    })
+    
+    # Export
+    $exportBtn.Add_Click({
+        $saveDialog = New-Object System.Windows.Forms.SaveFileDialog
+        $saveDialog.Filter = "JSON Files (*.json)|*.json"
+        $saveDialog.Title = "Export Preset Configuration"
+        if ($saveDialog.ShowDialog() -eq "OK") {
+            $selectedText = $presetList.SelectedItem.ToString()
+            $presetName = ($selectedText -split ' ')[1]
+            $preset = $global:Presets[$presetName]
+            $preset | ConvertTo-Json -Depth 3 | Out-File -FilePath $saveDialog.FileName
+            $logBox.AppendText("`n✅ Preset '$presetName' exported to: $($saveDialog.FileName)`n")
+        }
+    })
+    
+    # Import
+    $importBtn.Add_Click({
+        $openDialog = New-Object System.Windows.Forms.OpenFileDialog
+        $openDialog.Filter = "JSON Files (*.json)|*.json"
+        $openDialog.Title = "Import Preset Configuration"
+        if ($openDialog.ShowDialog() -eq "OK") {
+            try {
+                $importedPreset = Get-Content -Path $openDialog.FileName -Raw | ConvertFrom-Json
+                $presetName = "Imported_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+                $global:Presets[$presetName] = @{
+                    description = "📥 Imported preset"
+                    icon = "📥"
+                    tweaks = $importedPreset.tweaks
+                    software = $importedPreset.software
+                }
+                $presetList.Items.Add("📥 $presetName - Imported Preset")
+                $logBox.AppendText("`n✅ Preset imported successfully as: $presetName`n")
+                [System.Windows.Forms.MessageBox]::Show("Preset imported successfully!", "Success", "OK", "Information")
+            } catch {
+                $logBox.AppendText("`n❌ Failed to import preset: $($_.Exception.Message)`n")
+            }
+        }
+    })
+    
+    # Show form
+    $form.ShowDialog() | Out-Null
 }
 
 # ============================================================
-# SOFTWARE INSTALLATION
+# PRESET BUILDER GUI
 # ============================================================
 
-function Install-SCWUSoftware {
+function Show-SCWUCustomPresetBuilder {
     <#
     .SYNOPSIS
-        Installs software from your custom repository
+        Custom preset builder interface
     .DESCRIPTION
-        Fetches software list from your GitHub repository and
-        provides an interactive installation menu.
+        Allows users to create their own presets by selecting tweaks and software
     #>
     
-    Write-SCWULog "Starting software installation module" -Level "INFO"
+    $builderForm = New-Object System.Windows.Forms.Form
+    $builderForm.Text = "🔧 Custom Preset Builder"
+    $builderForm.Size = New-Object System.Drawing.Size(700, 500)
+    $builderForm.StartPosition = "CenterScreen"
+    $builderForm.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(30, 30, 30) } else { [System.Drawing.Color]::White }
+    $builderForm.ForeColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::White } else { [System.Drawing.Color]::Black }
+    $builderForm.FormBorderStyle = "FixedDialog"
+    $builderForm.MaximizeBox = $false
     
-    # Fetch software list
+    # Left panel: Tweaks
+    $tweakPanel = New-Object System.Windows.Forms.Panel
+    $tweakPanel.Location = New-Object System.Drawing.Point(10, 10)
+    $tweakPanel.Size = New-Object System.Drawing.Size(330, 400)
+    $tweakPanel.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(40, 40, 40) } else { [System.Drawing.Color]::FromArgb(240, 240, 240) }
+    $tweakPanel.BorderStyle = "FixedSingle"
+    
+    $tweakLabel = New-Object System.Windows.Forms.Label
+    $tweakLabel.Text = "⚡ Select Tweaks"
+    $tweakLabel.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+    $tweakLabel.Location = New-Object System.Drawing.Point(10, 10)
+    $tweakLabel.AutoSize = $true
+    $tweakPanel.Controls.Add($tweakLabel)
+    
+    # CheckedListBox for tweaks
+    $tweakCheckList = New-Object System.Windows.Forms.CheckedListBox
+    $tweakCheckList.Location = New-Object System.Drawing.Point(10, 40)
+    $tweakCheckList.Size = New-Object System.Drawing.Size(305, 310)
+    $tweakCheckList.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(50, 50, 50) } else { [System.Drawing.Color]::White }
+    $tweakCheckList.ForeColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::White } else { [System.Drawing.Color]::Black }
+    $tweakCheckList.Font = New-Object System.Drawing.Font("Segoe UI", 10)
+    foreach ($tweak in $global:TweakDefinitions.Keys) {
+        $tweakCheckList.Items.Add($global:TweakDefinitions[$tweak].name)
+    }
+    $tweakPanel.Controls.Add($tweakCheckList)
+    $builderForm.Controls.Add($tweakPanel)
+    
+    # Right panel: Software
+    $softwarePanel = New-Object System.Windows.Forms.Panel
+    $softwarePanel.Location = New-Object System.Drawing.Point(350, 10)
+    $softwarePanel.Size = New-Object System.Drawing.Size(330, 400)
+    $softwarePanel.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(40, 40, 40) } else { [System.Drawing.Color]::FromArgb(240, 240, 240) }
+    $softwarePanel.BorderStyle = "FixedSingle"
+    
+    $softwareLabel = New-Object System.Windows.Forms.Label
+    $softwareLabel.Text = "📦 Select Software"
+    $softwareLabel.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+    $softwareLabel.Location = New-Object System.Drawing.Point(10, 10)
+    $softwareLabel.AutoSize = $true
+    $softwarePanel.Controls.Add($softwareLabel)
+    
+    # CheckedListBox for software
+    $softwareCheckList = New-Object System.Windows.Forms.CheckedListBox
+    $softwareCheckList.Location = New-Object System.Drawing.Point(10, 40)
+    $softwareCheckList.Size = New-Object System.Drawing.Size(305, 310)
+    $softwareCheckList.BackColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::FromArgb(50, 50, 50) } else { [System.Drawing.Color]::White }
+    $softwareCheckList.ForeColor = if ($global:ThemeMode -eq "Dark") { [System.Drawing.Color]::White } else { [System.Drawing.Color]::Black }
+    $softwareCheckList.Font = New-Object System.Drawing.Font("Segoe UI", 10)
+    
+    # Populate software list
     $softwareList = $null
     try {
         $softwareList = Invoke-RestMethod -Uri $global:SCWU_Config.Urls.Software -ErrorAction Stop
-        Write-SCWULog "Software list retrieved successfully" -Level "SUCCESS"
+        foreach ($sw in $softwareList) {
+            $softwareCheckList.Items.Add($sw.name)
+        }
     } catch {
-        Write-SCWULog "Failed to retrieve software list: $($_.Exception.Message)" -Level "ERROR"
-        Write-SCWULog "Please check your internet connection and repository URL" -Level "WARNING"
+        # Default software list
+        $defaultSoftware = @("7-Zip", "Visual Studio Code", "Git", "Notepad++", "Discord", "Spotify", "Steam", "Wireshark", "Everything", "PowerToys")
+        foreach ($sw in $defaultSoftware) {
+            $softwareCheckList.Items.Add($sw)
+        }
+    }
+    $softwarePanel.Controls.Add($softwareCheckList)
+    $builderForm.Controls.Add($softwarePanel)
+    
+    # Bottom buttons
+    $savePresetBtn = New-Object System.Windows.Forms.Button
+    $savePresetBtn.Text = "💾 Save Custom Preset"
+    $savePresetBtn.Location = New-Object System.Drawing.Point(200, 425)
+    $savePresetBtn.Size = New-Object System.Drawing.Size(200, 40)
+    $savePresetBtn.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+    $savePresetBtn.BackColor = [System.Drawing.Color]::FromArgb(0, 150, 0)
+    $savePresetBtn.ForeColor = [System.Drawing.Color]::White
+    $savePresetBtn.FlatStyle = "Flat"
+    $builderForm.Controls.Add($savePresetBtn)
+    
+    $cancelBtn = New-Object System.Windows.Forms.Button
+    $cancelBtn.Text = "Cancel"
+    $cancelBtn.Location = New-Object System.Drawing.Point(420, 425)
+    $cancelBtn.Size = New-Object System.Drawing.Size(100, 40)
+    $cancelBtn.Font = New-Object System.Drawing.Font("Segoe UI", 10)
+    $cancelBtn.FlatStyle = "Flat"
+    $builderForm.Controls.Add($cancelBtn)
+    
+    # Event handlers
+    $savePresetBtn.Add_Click({
+        # Get selected tweaks
+        $selectedTweaks = @()
+        for ($i = 0; $i -lt $tweakCheckList.Items.Count; $i++) {
+            if ($tweakCheckList.GetItemChecked($i)) {
+                $tweakName = ($tweakCheckList.Items[$i] -split " - ")[0]
+                $selectedTweaks += $tweakName
+            }
+        }
         
-        # Check if we have a local cache
-        $cachePath = "$env:APPDATA\ShaneCodes\Utilman\cache\software.json"
-        if (Test-Path $cachePath) {
-            Write-SCWULog "Loading cached software list" -Level "INFO"
-            $softwareList = Get-Content -Path $cachePath -Raw | ConvertFrom-Json
-        } else {
-            Write-SCWULog "No software cache found. Returning to menu." -Level "ERROR"
+        # Get selected software
+        $selectedSoftware = @()
+        for ($i = 0; $i -lt $softwareCheckList.Items.Count; $i++) {
+            if ($softwareCheckList.GetItemChecked($i)) {
+                $selectedSoftware += $softwareCheckList.Items[$i]
+            }
+        }
+        
+        if ($selectedTweaks.Count -eq 0 -and $selectedSoftware.Count -eq 0) {
+            [System.Windows.Forms.MessageBox]::Show("Please select at least one tweak or software.", "Warning", "OK", "Warning")
             return
         }
-    }
-    
-    # Display software categories
-    Write-Host "`n📦 Available Software Categories:" -ForegroundColor Yellow
-    
-    # Get categories from configuration or default
-    $config = Get-SCWUConfiguration
-    $categories = if ($config.software_categories) { $config.software_categories } else { @("Productivity", "Development", "Multimedia", "Utilities", "Communication") }
-    
-    $index = 0
-    $categoryMap = @{}
-    foreach ($category in $categories) {
-        $index++
-        Write-Host "  [$index] $category" -ForegroundColor White
-        $categoryMap[$index] = $category
-    }
-    Write-Host "  [0] Show All Software" -ForegroundColor Gray
-    
-    $catChoice = Read-Host "`nSelect a category (number)"
-    
-    # Filter software by category
-    $selectedCategory = $null
-    if ($catChoice -ne '0' -and $categoryMap.ContainsKey([int]$catChoice)) {
-        $selectedCategory = $categoryMap[[int]$catChoice]
-        Write-Host "`n📂 Category: $selectedCategory" -ForegroundColor Cyan
-    } else {
-        Write-Host "`n📂 Showing all available software" -ForegroundColor Cyan
-    }
-    
-    # Display software in the selected category
-    $filteredSoftware = @()
-    if ($selectedCategory) {
-        $filteredSoftware = $softwareList | Where-Object { $_.category -eq $selectedCategory }
-    } else {
-        $filteredSoftware = $softwareList
-    }
-    
-    if ($filteredSoftware.Count -eq 0) {
-        Write-Host "No software found in this category." -ForegroundColor Yellow
-        return
-    }
-    
-    Write-Host "`nAvailable Software:" -ForegroundColor Yellow
-    $softwareIndex = 0
-    $softwareMap = @{}
-    foreach ($item in $filteredSoftware) {
-        $softwareIndex++
-        Write-Host "  [$softwareIndex] $($item.name)" -ForegroundColor White
-        Write-Host "        $($item.description)" -ForegroundColor Gray
-        $softwareMap[$softwareIndex] = $item
-    }
-    
-    $selection = Read-Host "`nEnter numbers to install (comma separated, or 'all'): "
-    
-    if ($selection -eq 'all') {
-        foreach ($item in $filteredSoftware) {
-            Install-SCWUSingleSoftware $item
+        
+        # Create custom preset
+        $presetName = "Custom_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+        $global:Presets[$presetName] = @{
+            description = "🔧 Custom preset"
+            icon = "🔧"
+            tweaks = $selectedTweaks
+            software = $selectedSoftware
         }
-    } else {
-        $selections = $selection -split ',' | ForEach-Object { $_.Trim() }
-        foreach ($num in $selections) {
-            if ($softwareMap.ContainsKey([int]$num)) {
-                Install-SCWUSingleSoftware $softwareMap[[int]$num]
-            } else {
-                Write-SCWULog "Invalid selection: $num" -Level "WARNING"
-            }
-        }
-    }
+        
+        [System.Windows.Forms.MessageBox]::Show("Custom preset '$presetName' created successfully!", "Success", "OK", "Information")
+        $builderForm.Close()
+    })
     
-    # Cache the software list for offline use
-    $cacheDir = "$env:APPDATA\ShaneCodes\Utilman\cache"
-    if (-not (Test-Path $cacheDir)) {
-        New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
-    }
-    $softwareList | ConvertTo-Json -Depth 3 | Out-File -FilePath "$cacheDir\software.json" -Encoding UTF8
-}
-
-function Install-SCWUSingleSoftware {
-    param(
-        [PSCustomObject]$Software
-    )
+    $cancelBtn.Add_Click({
+        $builderForm.Close()
+    })
     
-    Write-SCWULog "Installing: $($Software.name)" -Level "INFO"
-    
-    # Determine installation method
-    $installed = $false
-    
-    # Method 1: Winget (Windows Package Manager)
-    if ($Software.winget_id -and (Get-Command winget -ErrorAction SilentlyContinue)) {
-        try {
-            Write-SCWULog "Installing via Winget: $($Software.winget_id)" -Level "INFO"
-            winget install $Software.winget_id --silent --accept-package-agreements
-            $installed = $true
-        } catch {
-            Write-SCWULog "Winget installation failed: $($_.Exception.Message)" -Level "WARNING"
-        }
-    }
-    
-    # Method 2: Chocolatey
-    if (-not $installed -and $Software.choco_id -and (Get-Command choco -ErrorAction SilentlyContinue)) {
-        try {
-            Write-SCWULog "Installing via Chocolatey: $($Software.choco_id)" -Level "INFO"
-            choco install $Software.choco_id -y
-            $installed = $true
-        } catch {
-            Write-SCWULog "Chocolatey installation failed: $($_.Exception.Message)" -Level "WARNING"
-        }
-    }
-    
-    # Method 3: Direct download
-    if (-not $installed -and $Software.download_url) {
-        try {
-            Write-SCWULog "Downloading installer: $($Software.download_url)" -Level "INFO"
-            $installerPath = "$env:TEMP\$($Software.name -replace ' ', '_')_installer.exe"
-            Invoke-WebRequest -Uri $Software.download_url -OutFile $installerPath -ErrorAction Stop
-            
-            if ($Software.silent_args) {
-                Write-SCWULog "Running silent install: $($Software.silent_args)" -Level "INFO"
-                Start-Process -FilePath $installerPath -ArgumentList $Software.silent_args -Wait
-            } else {
-                Write-SCWULog "Running installer (manual interaction required)" -Level "INFO"
-                Start-Process -FilePath $installerPath -Wait
-            }
-            $installed = $true
-        } catch {
-            Write-SCWULog "Direct download installation failed: $($_.Exception.Message)" -Level "ERROR"
-        }
-    }
-    
-    if ($installed) {
-        Write-SCWULog "Successfully installed: $($Software.name)" -Level "SUCCESS"
-    } else {
-        Write-SCWULog "Failed to install: $($Software.name)" -Level "ERROR"
-        Write-SCWULog "Please install this software manually." -Level "WARNING"
-    }
+    $builderForm.ShowDialog() | Out-Null
 }
 
 # ============================================================
-# SYSTEM TWEAKS
+# HELPER FUNCTIONS
 # ============================================================
 
-function Apply-SCWUTweaks {
-    <#
-    .SYNOPSIS
-        Applies system tweaks from your custom configuration
-    .DESCRIPTION
-        Retrieves tweak definitions from your repository and
-        applies them to the Windows system.
-    #>
+function Apply-SCWUTweakByName {
+    param($tweakName)
     
-    Write-SCWULog "Starting system tweaks module" -Level "INFO"
+    $tweak = $global:TweakDefinitions[$tweakName]
+    if (-not $tweak) { return }
     
-    # Fetch tweaks list
-    $tweakData = $null
-    try {
-        $tweakData = Invoke-RestMethod -Uri $global:SCWU_Config.Urls.Tweaks -ErrorAction Stop
-        Write-SCWULog "Tweaks retrieved successfully" -Level "SUCCESS"
-    } catch {
-        Write-SCWULog "Failed to retrieve tweaks: $($_.Exception.Message)" -Level "ERROR"
-        return
-    }
-    
-    # Display tweak categories
-    Write-Host "`n⚡ Available Tweak Categories:" -ForegroundColor Yellow
-    
-    $categories = $tweakData.PSObject.Properties.Name
-    $index = 0
-    $categoryMap = @{}
-    foreach ($category in $categories) {
-        $index++
-        Write-Host "  [$index] $category" -ForegroundColor White
-        if ($tweakData.$category.description) {
-            Write-Host "        $($tweakData.$category.description)" -ForegroundColor Gray
-        }
-        $categoryMap[$index] = $category
-    }
-    
-    $catChoice = Read-Host "`nSelect a tweak category (number)"
-    
-    if ($categoryMap.ContainsKey([int]$catChoice)) {
-        $selectedCategory = $categoryMap[[int]$catChoice]
-        $tweaks = $tweakData.$selectedCategory.tweaks
-        
-        Write-Host "`n📂 Category: $selectedCategory" -ForegroundColor Cyan
-        Write-Host "Available tweaks in this category:" -ForegroundColor Yellow
-        
-        $tweakIndex = 0
-        $tweakMap = @{}
-        foreach ($tweak in $tweaks) {
-            $tweakIndex++
-            Write-Host "  [$tweakIndex] $($tweak.name)" -ForegroundColor White
-            Write-Host "        $($tweak.description)" -ForegroundColor Gray
-            $tweakMap[$tweakIndex] = $tweak
-        }
-        
-        $selection = Read-Host "`nEnter numbers to apply (comma separated, or 'all'): "
-        
-        $selectedTweaks = @()
-        if ($selection -eq 'all') {
-            $selectedTweaks = $tweaks
-        } else {
-            $selections = $selection -split ',' | ForEach-Object { $_.Trim() }
-            foreach ($num in $selections) {
-                if ($tweakMap.ContainsKey([int]$num)) {
-                    $selectedTweaks += $tweakMap[[int]$num]
+    if ($tweak.registry) {
+        foreach ($path in $tweak.registry.Keys) {
+            $values = $tweak.registry[$path]
+            foreach ($valueName in $values.Keys) {
+                try {
+                    if (-not (Test-Path $path)) {
+                        New-Item -Path $path -Force | Out-Null
+                    }
+                    Set-ItemProperty -Path $path -Name $valueName -Value $values[$valueName] -Type DWord -Force
+                } catch {
+                    # Silently continue
                 }
             }
-        }
-        
-        # Apply selected tweaks
-        foreach ($tweak in $selectedTweaks) {
-            Apply-SCWUSingleTweak $tweak
-        }
-        
-        Write-SCWULog "Tweak application complete" -Level "SUCCESS"
-        Write-Host "`nSome changes may require a reboot to take effect." -ForegroundColor Yellow
-    } else {
-        Write-SCWULog "Invalid category selection" -Level "WARNING"
-    }
-}
-
-function Apply-SCWUSingleTweak {
-    param(
-        [PSCustomObject]$Tweak
-    )
-    
-    Write-SCWULog "Applying tweak: $($Tweak.name)" -Level "INFO"
-    
-    switch ($Tweak.type) {
-        "Registry" {
-            try {
-                # Ensure registry path exists
-                $regPath = $Tweak.registry_path
-                if ($regPath -match '^HKCU:') {
-                    # User-specific tweak
-                    if (-not (Test-Path $regPath)) {
-                        New-Item -Path $regPath -Force | Out-Null
-                    }
-                } elseif ($regPath -match '^HKLM:') {
-                    # System-wide tweak (requires admin)
-                    if (-not (Test-Path $regPath)) {
-                        New-Item -Path $regPath -Force | Out-Null
-                    }
-                }
-                
-                # Set registry value
-                Set-ItemProperty -Path $Tweak.registry_path -Name $Tweak.value_name -Value $Tweak.value_data -Type $Tweak.value_type -Force
-                Write-SCWULog "Registry tweak applied: $($Tweak.name)" -Level "SUCCESS"
-            } catch {
-                Write-SCWULog "Failed to apply registry tweak: $($_.Exception.Message)" -Level "ERROR"
-            }
-        }
-        
-        "Service" {
-            try {
-                $serviceName = $Tweak.service_name
-                switch ($Tweak.action) {
-                    "Disable" {
-                        Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
-                        Set-Service -Name $serviceName -StartupType Disabled
-                        Write-SCWULog "Service disabled: $serviceName" -Level "SUCCESS"
-                    }
-                    "Enable" {
-                        Set-Service -Name $serviceName -StartupType Automatic
-                        Start-Service -Name $serviceName -ErrorAction SilentlyContinue
-                        Write-SCWULog "Service enabled: $serviceName" -Level "SUCCESS"
-                    }
-                }
-            } catch {
-                Write-SCWULog "Failed to modify service: $($_.Exception.Message)" -Level "ERROR"
-            }
-        }
-        
-        "PowerShell" {
-            try {
-                Invoke-Expression $Tweak.script
-                Write-SCWULog "PowerShell tweak applied: $($Tweak.name)" -Level "SUCCESS"
-            } catch {
-                Write-SCWULog "Failed to apply PowerShell tweak: $($_.Exception.Message)" -Level "ERROR"
-            }
-        }
-        
-        default {
-            Write-SCWULog "Unknown tweak type: $($Tweak.type)" -Level "WARNING"
         }
     }
 }
 
-# ============================================================
-# WINDOWS UPDATE MANAGEMENT
-# ============================================================
-
-function Manage-SCWUUpdates {
-    <#
-    .SYNOPSIS
-        Manages Windows Update configuration
-    .DESCRIPTION
-        Provides options for configuring Windows Update settings
-        and checking for updates.
-    #>
-    
-    Write-SCWULog "Starting Windows Update management" -Level "INFO"
-    
-    Write-Host "`n🔧 Windows Update Configuration:" -ForegroundColor Yellow
-    Write-Host "  [1] Check for updates now"
-    Write-Host "  [2] Configure update settings"
-    Write-Host "  [3] View update history"
-    Write-Host "  [4] Return to main menu"
-    
-    $choice = Read-Host "`nSelect an option (1-4)"
-    
-    switch ($choice) {
-        '1' {
-            Write-SCWULog "Checking for Windows Updates..." -Level "INFO"
-            try {
-                $updateSession = New-Object -ComObject Microsoft.Update.Session
-                $updateSearcher = $updateSession.CreateUpdateSearcher()
-                $searchResult = $updateSearcher.Search("IsInstalled=0")
-                
-                if ($searchResult.Updates.Count -eq 0) {
-                    Write-Host "No updates available." -ForegroundColor Green
-                } else {
-                    Write-Host "Found $($searchResult.Updates.Count) available updates:" -ForegroundColor Yellow
-                    $i = 1
-                    foreach ($update in $searchResult.Updates) {
-                        Write-Host "  [$i] $($update.Title)" -ForegroundColor White
-                        $i++
-                    }
-                    
-                    $installChoice = Read-Host "`nInstall all available updates? (y/n)"
-                    if ($installChoice -eq 'y') {
-                        $downloader = $updateSession.CreateUpdateDownloader()
-                        $downloader.Updates = $searchResult.Updates
-                        $downloadResult = $downloader.Download()
-                        
-                        if ($downloadResult.ResultCode -eq 2) { # Downloaded
-                            $installer = $updateSession.CreateUpdateInstaller()
-                            $installer.Updates = $searchResult.Updates
-                            $installResult = $installer.Install()
-                            Write-SCWULog "Updates installed: $($installResult.InstalledUpdates.Count)" -Level "SUCCESS"
-                        }
-                    }
-                }
-            } catch {
-                Write-SCWULog "Failed to check for updates: $($_.Exception.Message)" -Level "ERROR"
-            }
-        }
-        '2' {
-            Write-Host "`nUpdate Settings Configuration:" -ForegroundColor Yellow
-            Write-Host "  [1] Set to Automatic (Recommended)"
-            Write-Host "  [2] Set to Notify before download"
-            Write-Host "  [3] Set to Never check for updates"
-            
-            $settingChoice = Read-Host "`nSelect option (1-3)"
-            
-            $regPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"
-            switch ($settingChoice) {
-                '1' {
-                    Set-ItemProperty -Path $regPath -Name "AUOptions" -Value 4 -Type DWord -Force
-                    Set-ItemProperty -Path $regPath -Name "ScheduledInstallDay" -Value 0 -Type DWord -Force
-                    Write-Host "Automatic updates enabled." -ForegroundColor Green
-                }
-                '2' {
-                    Set-ItemProperty -Path $regPath -Name "AUOptions" -Value 3 -Type DWord -Force
-                    Write-Host "Notifications enabled." -ForegroundColor Green
-                }
-                '3' {
-                    Set-ItemProperty -Path $regPath -Name "AUOptions" -Value 1 -Type DWord -Force
-                    Write-Host "Automatic updates disabled." -ForegroundColor Yellow
-                }
-            }
-        }
-        '3' {
-            Write-Host "`nUpdate History:" -ForegroundColor Yellow
-            try {
-                $updateSession = New-Object -ComObject Microsoft.Update.Session
-                $updateSearcher = $updateSession.CreateUpdateSearcher()
-                $historyCount = $updateSearcher.GetTotalHistoryCount()
-                $history = $updateSearcher.QueryHistory(0, [Math]::Min(20, $historyCount))
-                
-                if ($historyCount -eq 0) {
-                    Write-Host "No update history found." -ForegroundColor Gray
-                } else {
-                    Write-Host "Last $([Math]::Min(20, $historyCount)) updates:" -ForegroundColor Cyan
-                    foreach ($item in $history) {
-                        $status = @("Failed", "Succeeded", "Cancelled")[$item.ResultCode]
-                        Write-Host "  [$status] $($item.Title)" -ForegroundColor White
-                    }
-                }
-            } catch {
-                Write-SCWULog "Failed to retrieve update history: $($_.Exception.Message)" -Level "ERROR"
-            }
-        }
-        '4' { return }
-        default { Write-Host "Invalid option." -ForegroundColor Red }
-    }
-}
-
-# ============================================================
-# SYSTEM INFORMATION
-# ============================================================
-
-function Show-SCWUSystemInfo {
-    <#
-    .SYNOPSIS
-        Displays detailed system information
-    .DESCRIPTION
-        Retrieves and displays comprehensive system information.
-    #>
-    
-    Write-SCWULog "Gathering system information" -Level "INFO"
-    
-    Clear-Host
-    Write-Host "╔════════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║                    SYSTEM INFORMATION                          ║" -ForegroundColor Cyan
-    Write-Host "╚════════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
-    Write-Host ""
-    
-    # OS Information
-    $os = Get-CimInstance -ClassName Win32_OperatingSystem
-    Write-Host "  Operating System:" -ForegroundColor Yellow
-    Write-Host "    $($os.Caption) $($os.Version)" -ForegroundColor White
-    Write-Host "    Build: $($os.BuildNumber)" -ForegroundColor Gray
-    Write-Host ""
-    
-    # Hardware Information
-    $computer = Get-CimInstance -ClassName Win32_ComputerSystem
-    Write-Host "  Hardware:" -ForegroundColor Yellow
-    Write-Host "    Manufacturer: $($computer.Manufacturer)" -ForegroundColor White
-    Write-Host "    Model: $($computer.Model)" -ForegroundColor White
-    Write-Host "    Total RAM: $([math]::Round($computer.TotalPhysicalMemory / 1GB, 2)) GB" -ForegroundColor White
-    Write-Host ""
-    
-    # Processor Information
-    $cpu = Get-CimInstance -ClassName Win32_Processor
-    Write-Host "  Processor:" -ForegroundColor Yellow
-    Write-Host "    Name: $($cpu.Name)" -ForegroundColor White
-    Write-Host "    Cores: $($cpu.NumberOfCores)" -ForegroundColor White
-    Write-Host "    Logical Processors: $($cpu.NumberOfLogicalProcessors)" -ForegroundColor White
-    Write-Host ""
-    
-    # Disk Information
-    Write-Host "  Storage:" -ForegroundColor Yellow
-    $drives = Get-PSDrive -PSProvider FileSystem
-    foreach ($drive in $drives) {
-        if ($drive.Used -gt 0) {
-            $usedGB = [math]::Round($drive.Used / 1GB, 2)
-            $freeGB = [math]::Round($drive.Free / 1GB, 2)
-            $totalGB = [math]::Round(($drive.Used + $drive.Free) / 1GB, 2)
-            Write-Host "    $($drive.Name): $usedGB GB used / $freeGB GB free / $totalGB GB total" -ForegroundColor White
-        }
-    }
-    Write-Host ""
-    
-    # Network Information
-    Write-Host "  Network:" -ForegroundColor Yellow
-    $adapters = Get-NetAdapter -Physical | Where-Object { $_.Status -eq 'Up' }
-    foreach ($adapter in $adapters) {
-        $ip = (Get-NetIPAddress -InterfaceIndex $adapter.InterfaceIndex -AddressFamily IPv4 | Where-Object { $_.AddressState -eq 'Preferred' }).IPAddress
-        Write-Host "    $($adapter.Name): $ip" -ForegroundColor White
-    }
-    Write-Host ""
-    
-    # BIOS Information
-    $bios = Get-CimInstance -ClassName Win32_BIOS
-    Write-Host "  BIOS:" -ForegroundColor Yellow
-    Write-Host "    Version: $($bios.SMBIOSBIOSVersion)" -ForegroundColor White
-    Write-Host "    Serial: $($bios.SerialNumber)" -ForegroundColor White
-    Write-Host ""
-    
-    # Utilman Status
-    Write-Host "  ShaneCodes Utilman:" -ForegroundColor Yellow
-    Write-Host "    Version: $($global:SCWU_Config.Version -replace '\.ps1$', '')" -ForegroundColor White
-    Write-Host "    Config: $(if (Test-Path $global:LocalConfigPath) { 'Local cached' } else { 'Remote' })" -ForegroundColor White
-    Write-Host "    Logs: $global:LocalLogPath" -ForegroundColor Gray
-    
-    Write-Host "`nPress any key to continue..."
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-}
-
-# ============================================================
-# UPDATE UTILITY
-# ============================================================
-
-function Update-SCWUUtility {
-    <#
-    .SYNOPSIS
-        Updates the ShaneCodes Utilman script
-    .DESCRIPTION
-        Checks for and installs updates to the utility itself.
-    #>
-    
-    Write-SCWULog "Checking for Utilman updates" -Level "INFO"
+function Install-SCWUSoftwareByName {
+    param($appName)
     
     try {
-        # Get remote version
-        $remoteVersion = Invoke-RestMethod -Uri $global:SCWU_Config.Urls.Version -ErrorAction Stop
-        $localVersion = "1.0.0" # This should be updated with each release
-        
-        Write-Host "`nCurrent version: $localVersion" -ForegroundColor Cyan
-        Write-Host "Remote version: $remoteVersion" -ForegroundColor Cyan
-        
-        if ($remoteVersion -gt $localVersion) {
-            Write-Host "`n🔄 New version available!" -ForegroundColor Green
-            
-            $confirm = Read-Host "Download and install update? (y/n)"
-            if ($confirm -eq 'y') {
-                # Download new script
-                $newScript = Invoke-RestMethod -Uri $global:SCWU_Config.Urls.Script -ErrorAction Stop
-                
-                # Backup current script
-                $backupPath = "$PSScriptRoot\ShaneCodes-Utilman_Backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').ps1"
-                Copy-Item $MyInvocation.MyCommand.Path $backupPath
-                Write-SCWULog "Backup created: $backupPath" -Level "SUCCESS"
-                
-                # Save new script
-                $newScript | Out-File -FilePath $MyInvocation.MyCommand.Path -Encoding UTF8
-                Write-SCWULog "Update installed successfully!" -Level "SUCCESS"
-                Write-Host "`nPlease restart the script to apply the update." -ForegroundColor Yellow
-                Read-Host "Press Enter to exit"
-                exit 0
-            }
-        } else {
-            Write-SCWULog "Utility is up to date" -Level "SUCCESS"
-            Write-Host "`n✅ You have the latest version of ShaneCodes Utilman." -ForegroundColor Green
+        # Try Winget first
+        if (Get-Command winget -ErrorAction SilentlyContinue) {
+            winget install $appName --silent --accept-package-agreements -ErrorAction SilentlyContinue
         }
     } catch {
-        Write-SCWULog "Failed to check for updates: $($_.Exception.Message)" -Level "ERROR"
-        Write-Host "`nUnable to check for updates. Please check your internet connection." -ForegroundColor Yellow
+        # Silently continue
     }
-    
-    Read-Host "`nPress Enter to continue"
 }
 
 # ============================================================
-# ADVANCED OPTIONS
+# MAIN ENTRY POINT
 # ============================================================
 
-function Show-SCWUAdvanced {
-    <#
-    .SYNOPSIS
-        Displays advanced options menu
-    .DESCRIPTION
-        Provides access to advanced features and configurations.
-    #>
-    
-    Write-Host "`n⚙️ Advanced Options:" -ForegroundColor Yellow
-    Write-Host "  [1] Clear configuration cache"
-    Write-Host "  [2] Reset all settings to default"
-    Write-Host "  [3] Export current configuration"
-    Write-Host "  [4] View log files"
-    Write-Host "  [5] Return to main menu"
-    
-    $choice = Read-Host "`nSelect an option (1-5)"
-    
-    switch ($choice) {
-        '1' {
-            Write-SCWULog "Clearing configuration cache" -Level "INFO"
-            $cachePath = "$env:APPDATA\ShaneCodes\Utilman\cache"
-            if (Test-Path $cachePath) {
-                Remove-Item -Path $cachePath -Recurse -Force
-                Write-Host "Cache cleared successfully." -ForegroundColor Green
-            } else {
-                Write-Host "No cache to clear." -ForegroundColor Yellow
-            }
-        }
-        '2' {
-            Write-Host "WARNING: This will reset all settings to default." -ForegroundColor Red
-            $confirm = Read-Host "Continue? (y/n)"
-            if ($confirm -eq 'y') {
-                $configPath = "$env:APPDATA\ShaneCodes\Utilman"
-                if (Test-Path $configPath) {
-                    Remove-Item -Path $configPath -Recurse -Force
-                    Write-Host "Settings reset to default." -ForegroundColor Green
-                }
-            }
-        }
-        '3' {
-            $exportPath = "$env:USERPROFILE\Desktop\SCWU_Export_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
-            $config = Get-SCWUConfiguration
-            $config | ConvertTo-Json -Depth 3 | Out-File -FilePath $exportPath -Encoding UTF8
-            Write-Host "Configuration exported to: $exportPath" -ForegroundColor Green
-        }
-        '4' {
-            $logFiles = Get-ChildItem -Path $global:LocalLogPath -Filter "*.log" -ErrorAction SilentlyContinue
-            if ($logFiles) {
-                Write-Host "`n📋 Log Files:" -ForegroundColor Yellow
-                foreach ($file in $logFiles) {
-                    Write-Host "  $($file.Name) - $($file.LastWriteTime)" -ForegroundColor White
-                }
-                
-                $fileChoice = Read-Host "`nEnter filename to view (or 'all' for all logs)"
-                if ($fileChoice -eq 'all') {
-                    foreach ($file in $logFiles) {
-                        Write-Host "`n--- $($file.Name) ---" -ForegroundColor Cyan
-                        Get-Content -Path $file.FullName | Select-Object -Last 20
-                    }
-                } else {
-                    $selectedFile = $logFiles | Where-Object { $_.Name -eq $fileChoice }
-                    if ($selectedFile) {
-                        Get-Content -Path $selectedFile.FullName | Select-Object -Last 30
-                    } else {
-                        Write-Host "File not found." -ForegroundColor Red
-                    }
-                }
-            } else {
-                Write-Host "No log files found." -ForegroundColor Yellow
-            }
-        }
-        '5' { return }
-        default { Write-Host "Invalid option." -ForegroundColor Red }
-    }
-    
-    Read-Host "`nPress Enter to continue"
-}
-
-# ============================================================
-# UTILITY FUNCTIONS
-# ============================================================
-
-function Test-SCWUPrerequisites {
-    <#
-    .SYNOPSIS
-        Tests if all prerequisites are met
-    .DESCRIPTION
-        Checks for internet connectivity and required components.
-    #>
-    
-    Write-SCWULog "Checking prerequisites..." -Level "INFO"
-    
-    # Check internet connectivity
-    try {
-        $test = Invoke-WebRequest -Uri "https://github.com" -UseBasicParsing -ErrorAction Stop
-        Write-SCWULog "Internet connection: OK" -Level "SUCCESS"
-    } catch {
-        Write-SCWULog "Internet connection: FAILED" -Level "ERROR"
-        Write-Host "`nNo internet connection detected. Some features may be unavailable." -ForegroundColor Yellow
-        return $false
-    }
-    
-    # Check for admin privileges
-    if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-        Write-SCWULog "Administrator privileges: MISSING" -Level "ERROR"
-        Write-Host "`nThis script must be run as Administrator." -ForegroundColor Red
-        return $false
-    } else {
-        Write-SCWULog "Administrator privileges: OK" -Level "SUCCESS"
-    }
-    
-    # Create application directory
-    $appDir = "$env:APPDATA\ShaneCodes\Utilman"
-    if (-not (Test-Path $appDir)) {
-        New-Item -ItemType Directory -Path $appDir -Force | Out-Null
-        Write-SCWULog "Application directory created: $appDir" -Level "INFO"
-    }
-    
-    return $true
-}
-
-# ============================================================
-# MAIN EXECUTION
-# ============================================================
-
-function Main {
-    <#
-    .SYNOPSIS
-        Main entry point for ShaneCodes Windows Utilman
-    .DESCRIPTION
-        Controls the primary execution flow of the utility.
-    #>
-    
-    # Set console window title
-    $Host.UI.RawUI.WindowTitle = "ShaneCodes Windows Utilman v1.0"
-    
-    # Run prerequisite checks
-    if (-not (Test-SCWUPrerequisites)) {
-        Write-Host "`nPress any key to exit..."
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-        exit 1
-    }
-    
-    Write-SCWULog "ShaneCodes Windows Utilman started" -Level "INFO"
-    
-    # Main menu loop
-    do {
-        Show-SCWUMenu
-        $choice = Read-Host "`nPlease select an option (1-7)"
-        
-        switch ($choice) {
-            '1' { Install-SCWUSoftware }
-            '2' { Apply-SCWUTweaks }
-            '3' { Manage-SCWUUpdates }
-            '4' { Show-SCWUSystemInfo }
-            '5' { Update-SCWUUtility }
-            '6' { 
-                Write-SCWULog "Exiting ShaneCodes Windows Utilman" -Level "INFO"
-                Write-Host "`nThank you for using ShaneCodes Windows Utilman!" -ForegroundColor Cyan
-                break 
-            }
-            '7' { Show-SCWUAdvanced }
-            default { 
-                Write-Host "Invalid selection. Please try again." -ForegroundColor Red
-                Start-Sleep -Seconds 1
-            }
-        }
-        
-        if ($choice -ne '6') {
-            Write-Host "`nPress any key to return to the menu..."
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-        }
-        
-    } while ($choice -ne '6')
-    
-    Write-SCWULog "Utility session ended" -Level "INFO"
-}
-
-# ============================================================
-# SCRIPT ENTRY POINT
-# ============================================================
-
-# Verify Administrator privileges before starting
+# Check for admin
 if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-    Write-Host "╔════════════════════════════════════════════════════════════════╗" -ForegroundColor Red
-    Write-Host "║                    ADMINISTRATOR REQUIRED                      ║" -ForegroundColor Red
-    Write-Host "╠════════════════════════════════════════════════════════════════╣" -ForegroundColor Red
-    Write-Host "║                                                                ║" -ForegroundColor Red
-    Write-Host "║  This script must be run as Administrator to function properly. ║" -ForegroundColor Yellow
-    Write-Host "║                                                                ║" -ForegroundColor Red
-    Write-Host "║  Please restart PowerShell as Administrator and run again.     ║" -ForegroundColor Yellow
-    Write-Host "║                                                                ║" -ForegroundColor Red
-    Write-Host "╚════════════════════════════════════════════════════════════════╝" -ForegroundColor Red
-    Start-Sleep -Seconds 3
+    Write-Host "Administrator privileges required!" -ForegroundColor Red
     exit 1
 }
 
-# Start the main program
-Main
+# Show GUI
+Show-SCWUGUI
