@@ -8,7 +8,7 @@
     irm https://raw.githubusercontent.com/shanecodes-glitch/shane-windows-utilman/main/ShaneCodes-Utilman.ps1 | iex
 .NOTES
     Author: Shane Nichael Obinguar
-    Version: 1.0.1
+    Version: 1.0.2
 #>
 
 #Requires -RunAsAdministrator
@@ -125,40 +125,40 @@ function Apply-Tweaks {
     switch ($choice) {
         "1" {
             $tweaks += @(
-                @{Name="Disable animations"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; Name="VisualFXSetting"; Value=2; Type="DWord"},
-                @{Name="Disable transparency effects"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"; Name="EnableTransparency"; Value=0; Type="DWord"},
-                @{Name="Disable startup delay"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize"; Name="StartupDelayInMSec"; Value=0; Type="DWord"}
+                @{TweakName="Disable animations"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; TweakValueName="VisualFXSetting"; TweakValue=2; TweakType="DWord"},
+                @{TweakName="Disable transparency effects"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"; TweakValueName="EnableTransparency"; TweakValue=0; TweakType="DWord"},
+                @{TweakName="Disable startup delay"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize"; TweakValueName="StartupDelayInMSec"; TweakValue=0; TweakType="DWord"}
             )
         }
         "2" {
             $tweaks += @(
-                @{Name="Disable telemetry"; Path="HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"; Name="AllowTelemetry"; Value=0; Type="DWord"},
-                @{Name="Disable advertising ID"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo"; Name="Enabled"; Value=0; Type="DWord"},
-                @{Name="Disable Cortana"; Path="HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"; Name="AllowCortana"; Value=0; Type="DWord"}
+                @{TweakName="Disable telemetry"; TweakPath="HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"; TweakValueName="AllowTelemetry"; TweakValue=0; TweakType="DWord"},
+                @{TweakName="Disable advertising ID"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo"; TweakValueName="Enabled"; TweakValue=0; TweakType="DWord"},
+                @{TweakName="Disable Cortana"; TweakPath="HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"; TweakValueName="AllowCortana"; TweakValue=0; TweakType="DWord"}
             )
         }
         "3" {
             $tweaks += @(
-                @{Name="Enable dark mode"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"; Name="AppsUseLightTheme"; Value=0; Type="DWord"},
-                @{Name="Enable dark mode (system)"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"; Name="SystemUsesLightTheme"; Value=0; Type="DWord"}
+                @{TweakName="Enable dark mode (apps)"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"; TweakValueName="AppsUseLightTheme"; TweakValue=0; TweakType="DWord"},
+                @{TweakName="Enable dark mode (system)"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"; TweakValueName="SystemUsesLightTheme"; TweakValue=0; TweakType="DWord"}
             )
         }
         "4" {
             $tweaks += @(
-                @{Name="Show file extensions"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; Name="HideFileExt"; Value=0; Type="DWord"},
-                @{Name="Show hidden files"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; Name="Hidden"; Value=1; Type="DWord"},
-                @{Name="Show super hidden files"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; Name="ShowSuperHidden"; Value=1; Type="DWord"},
-                @{Name="Show empty drives"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; Name="ShowEmptyDrives"; Value=1; Type="DWord"},
-                @{Name="Show this PC instead of quick access"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; Name="LaunchTo"; Value=1; Type="DWord"}
+                @{TweakName="Show file extensions"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; TweakValueName="HideFileExt"; TweakValue=0; TweakType="DWord"},
+                @{TweakName="Show hidden files"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; TweakValueName="Hidden"; TweakValue=1; TweakType="DWord"},
+                @{TweakName="Show super hidden files"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; TweakValueName="ShowSuperHidden"; TweakValue=1; TweakType="DWord"},
+                @{TweakName="Show empty drives"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; TweakValueName="ShowEmptyDrives"; TweakValue=1; TweakType="DWord"},
+                @{TweakName="Show this PC instead of quick access"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; TweakValueName="LaunchTo"; TweakValue=1; TweakType="DWord"}
             )
         }
         "5" {
             $tweaks += @(
-                @{Name="Disable telemetry"; Path="HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"; Name="AllowTelemetry"; Value=0; Type="DWord"},
-                @{Name="Disable animations"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; Name="VisualFXSetting"; Value=2; Type="DWord"},
-                @{Name="Show file extensions"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; Name="HideFileExt"; Value=0; Type="DWord"},
-                @{Name="Show hidden files"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; Name="Hidden"; Value=1; Type="DWord"},
-                @{Name="Enable dark mode"; Path="HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"; Name="AppsUseLightTheme"; Value=0; Type="DWord"}
+                @{TweakName="Disable telemetry"; TweakPath="HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"; TweakValueName="AllowTelemetry"; TweakValue=0; TweakType="DWord"},
+                @{TweakName="Disable animations"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; TweakValueName="VisualFXSetting"; TweakValue=2; TweakType="DWord"},
+                @{TweakName="Show file extensions"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; TweakValueName="HideFileExt"; TweakValue=0; TweakType="DWord"},
+                @{TweakName="Show hidden files"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; TweakValueName="Hidden"; TweakValue=1; TweakType="DWord"},
+                @{TweakName="Enable dark mode (apps)"; TweakPath="HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"; TweakValueName="AppsUseLightTheme"; TweakValue=0; TweakType="DWord"}
             )
         }
         "6" { return }
@@ -171,7 +171,7 @@ function Apply-Tweaks {
     if ($tweaks.Count -eq 0) { return }
     
     Write-Host "`nApplying $($tweaks.Count) tweaks...`n" -ForegroundColor Green
-    Write-Log "Applying tweaks: $($tweaks.Name -join ', ')"
+    Write-Log "Applying tweaks: $($tweaks.TweakName -join ', ')"
     
     try {
         Checkpoint-Computer -Description "ShaneCodes Utilman - Before tweaks" -ErrorAction SilentlyContinue
@@ -185,19 +185,19 @@ function Apply-Tweaks {
     $successCount = 0
     
     foreach ($tweak in $tweaks) {
-        Write-Host "Applying: $($tweak.Name)..." -ForegroundColor Yellow
+        Write-Host "Applying: $($tweak.TweakName)..." -ForegroundColor Yellow
         try {
-            $parentPath = Split-Path $tweak.Path -Parent
+            $parentPath = Split-Path $tweak.TweakPath -Parent
             if (-not (Test-Path $parentPath)) {
                 New-Item -Path $parentPath -Force -ErrorAction SilentlyContinue | Out-Null
             }
-            Set-ItemProperty -Path $tweak.Path -Name $tweak.Name -Value $tweak.Value -Type $tweak.Type -Force -ErrorAction Stop
-            Write-Host "  ✓ $($tweak.Name) applied" -ForegroundColor Green
-            Write-Log "Applied tweak: $($tweak.Name)"
+            Set-ItemProperty -Path $tweak.TweakPath -Name $tweak.TweakValueName -Value $tweak.TweakValue -Type $tweak.TweakType -Force -ErrorAction Stop
+            Write-Host "  ✓ $($tweak.TweakName) applied" -ForegroundColor Green
+            Write-Log "Applied tweak: $($tweak.TweakName)"
             $successCount++
         } catch {
-            Write-Host "  ✗ Failed to apply $($tweak.Name): $_" -ForegroundColor Red
-            Write-Log "Failed tweak: $($tweak.Name) - $_" "ERROR"
+            Write-Host "  ✗ Failed to apply $($tweak.TweakName): $_" -ForegroundColor Red
+            Write-Log "Failed tweak: $($tweak.TweakName) - $_" "ERROR"
         }
     }
     
@@ -267,7 +267,12 @@ function Update-Manager {
                 default { 3 }
             }
             try {
-                Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "AUOptions" -Value $auValue -Type DWord -Force
+                # Ensure parent key exists
+                $parentPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"
+                if (-not (Test-Path $parentPath)) {
+                    New-Item -Path $parentPath -Force | Out-Null
+                }
+                Set-ItemProperty -Path $parentPath -Name "AUOptions" -Value $auValue -Type DWord -Force
                 Write-Host "`nUpdate settings applied." -ForegroundColor Green
                 Write-Log "Updated AUOptions to $auValue"
             } catch {
@@ -372,7 +377,7 @@ function Self-Update {
     Write-Log "Started self-update check"
     
     $remoteVersionUrl = "https://raw.githubusercontent.com/shanecodes-glitch/shane-windows-utilman/main/version.txt"
-    $localVersion = "1.0.1"
+    $localVersion = "1.0.2"
     
     try {
         Write-Host "Checking for updates..." -ForegroundColor Green
@@ -470,7 +475,7 @@ function Show-Menu {
  |_____/ |_| |_||____/ |_____/       \____/ |_| \_| \___/ |_| \_| |_____| |_|  |_| |_| \_| |_| \_|
                                                                                                     
 ═══════════════════════════════════════════════════════════════════════════════════════════════════════
-  Your Windows, Your Control  |  Version 1.0.1  |  By Shane Nichael Obinguar
+  Your Windows, Your Control  |  Version 1.0.2  |  By Shane Nichael Obinguar
 ═══════════════════════════════════════════════════════════════════════════════════════════════════════
 "@
     Write-Host "`n[MAIN MENU]`n"
@@ -526,11 +531,11 @@ if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 
 # Initialize global variables
 $global:LogPath = Join-Path $env:TEMP "ShaneCodes-Utilman.log"
-$global:ToolVersion = "1.0.1"
+$global:ToolVersion = "1.0.2"
 
 Write-Log "ShaneCodes Utilman v$global:ToolVersion started"
 
-# Launch the main menu
+# Launch the main menu directly (no external file dependencies)
 try {
     Show-Menu
 } catch {
