@@ -1,0 +1,353 @@
+<Window x:Class="ShaneCodesUtilman.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ShaneCodes Windows Utilman" 
+        Height="600" 
+        Width="800" 
+        WindowStartupLocation="CenterScreen"
+        Background="#1E1E1E"
+        FontFamily="Segoe UI"
+        ResizeMode="CanMinimize">
+    
+    <Window.Resources>
+        <!-- Dark theme colors -->
+        <SolidColorBrush x:Key="BackgroundBrush" Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="ControlBackgroundBrush" Color="#2D2D2D"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#0078D4"/>
+        <SolidColorBrush x:Key="SuccessBrush" Color="#6CC070"/>
+        <SolidColorBrush x:Key="WarningBrush" Color="#FCE100"/>
+        <SolidColorBrush x:Key="ErrorBrush" Color="#E74856"/>
+    </Window.Resources>
+
+    <!-- Main Grid Layout -->
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{StaticResource ControlBackgroundBrush}" 
+                CornerRadius="8" Padding="15" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="🚀 ShaneCodes Windows Utilman" 
+                           FontSize="24" FontWeight="Bold" 
+                           Foreground="{StaticResource AccentBrush}"/>
+                <TextBlock Text=" v1.0.0" 
+                           FontSize="18" 
+                           Foreground="{StaticResource TextBrush}" 
+                           Margin="10,0,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Subtitle / Status Bar -->
+        <Border Grid.Row="1" Background="{StaticResource ControlBackgroundBrush}" 
+                CornerRadius="8" Padding="15" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="✅ Ready" 
+                           Foreground="{StaticResource SuccessBrush}" 
+                           FontWeight="Bold"/>
+                <TextBlock Text=" | Your Windows, Your Control" 
+                           Foreground="{StaticResource TextBrush}" 
+                           Margin="10,0,0,0"/>
+                <TextBlock Text=" | By Shane Nichael Obinguar" 
+                           Foreground="{StaticResource TextBrush}" 
+                           Margin="10,0,0,0" Opacity="0.7"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Main Content Area: Tab Control -->
+        <TabControl Grid.Row="2" Background="{StaticResource ControlBackgroundBrush}" 
+                    BorderBrush="{StaticResource ControlBackgroundBrush}" 
+                    BorderThickness="0">
+            
+            <!-- Tab 1: Software Installation -->
+            <TabItem Header="📦 Install Apps" 
+                     Background="{StaticResource ControlBackgroundBrush}" 
+                     Foreground="{StaticResource TextBrush}" 
+                     FontSize="14" FontWeight="SemiBold">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10">
+                    <StackPanel>
+                        <TextBlock Text="Select applications to install:" 
+                                   Foreground="{StaticResource TextBrush}" 
+                                   FontSize="16" Margin="0,0,0,10"/>
+                        
+                        <!-- App checkboxes will be dynamically generated -->
+                        <ItemsControl x:Name="AppListControl">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding Display}" 
+                                              Tag="{Binding Id}" 
+                                              Foreground="{StaticResource TextBrush}" 
+                                              Margin="0,5,20,5" FontSize="14"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        
+                        <Button Content="Install Selected Apps" 
+                                x:Name="InstallAppsButton"
+                                Background="{StaticResource AccentBrush}" 
+                                Foreground="{StaticResource TextBrush}" 
+                                FontSize="16" FontWeight="Bold"
+                                Padding="20,10" Margin="0,20,0,0" 
+                                HorizontalAlignment="Left"
+                                Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="8"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                        
+                        <TextBlock x:Name="InstallStatus" 
+                                   Foreground="{StaticResource TextBrush}" 
+                                   Margin="0,10,0,0" FontSize="14"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab 2: System Tweaks -->
+            <TabItem Header="⚡ System Tweaks" 
+                     Background="{StaticResource ControlBackgroundBrush}" 
+                     Foreground="{StaticResource TextBrush}" 
+                     FontSize="14" FontWeight="SemiBold">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10">
+                    <StackPanel>
+                        <TextBlock Text="Select tweaks to apply:" 
+                                   Foreground="{StaticResource TextBrush}" 
+                                   FontSize="16" Margin="0,0,0,10"/>
+                        
+                        <CheckBox Content="Disable Telemetry" 
+                                  x:Name="TweakTelemetry" 
+                                  Foreground="{StaticResource TextBrush}" 
+                                  FontSize="14" Margin="0,5"/>
+                        <CheckBox Content="Disable Animations" 
+                                  x:Name="TweakAnimations" 
+                                  Foreground="{StaticResource TextBrush}" 
+                                  FontSize="14" Margin="0,5"/>
+                        <CheckBox Content="Show File Extensions" 
+                                  x:Name="TweakFileExtensions" 
+                                  Foreground="{StaticResource TextBrush}" 
+                                  FontSize="14" Margin="0,5"/>
+                        <CheckBox Content="Show Hidden Files" 
+                                  x:Name="TweakHiddenFiles" 
+                                  Foreground="{StaticResource TextBrush}" 
+                                  FontSize="14" Margin="0,5"/>
+                        <CheckBox Content="Enable Dark Mode" 
+                                  x:Name="TweakDarkMode" 
+                                  Foreground="{StaticResource TextBrush}" 
+                                  FontSize="14" Margin="0,5"/>
+                        <CheckBox Content="Disable Cortana" 
+                                  x:Name="TweakCortana" 
+                                  Foreground="{StaticResource TextBrush}" 
+                                  FontSize="14" Margin="0,5"/>
+                        <CheckBox Content="Disable Advertising ID" 
+                                  x:Name="TweakAdvertising" 
+                                  Foreground="{StaticResource TextBrush}" 
+                                  FontSize="14" Margin="0,5"/>
+                        
+                        <Button Content="Apply Selected Tweaks" 
+                                x:Name="ApplyTweaksButton"
+                                Background="{StaticResource AccentBrush}" 
+                                Foreground="{StaticResource TextBrush}" 
+                                FontSize="16" FontWeight="Bold"
+                                Padding="20,10" Margin="0,20,0,0" 
+                                HorizontalAlignment="Left"
+                                Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="8"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                        
+                        <TextBlock x:Name="TweakStatus" 
+                                   Foreground="{StaticResource TextBrush}" 
+                                   Margin="0,10,0,0" FontSize="14"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab 3: Update Manager -->
+            <TabItem Header="🔧 Windows Updates" 
+                     Background="{StaticResource ControlBackgroundBrush}" 
+                     Foreground="{StaticResource TextBrush}" 
+                     FontSize="14" FontWeight="SemiBold">
+                <StackPanel Margin="10">
+                    <TextBlock Text="Windows Update Control" 
+                               Foreground="{StaticResource TextBrush}" 
+                               FontSize="16" Margin="0,0,0,15"/>
+                    
+                    <Button Content="🔍 Check for Updates" 
+                            x:Name="CheckUpdatesButton"
+                            Background="{StaticResource AccentBrush}" 
+                            Foreground="{StaticResource TextBrush}" 
+                            FontSize="14" FontWeight="SemiBold"
+                            Padding="15,8" Margin="0,5" 
+                            HorizontalAlignment="Left"
+                            Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    
+                    <Button Content="⚙️ Open Update Settings" 
+                            x:Name="OpenUpdateSettingsButton"
+                            Background="{StaticResource ControlBackgroundBrush}" 
+                            Foreground="{StaticResource TextBrush}" 
+                            FontSize="14"
+                            Padding="15,8" Margin="0,5" 
+                            HorizontalAlignment="Left"
+                            BorderBrush="{StaticResource TextBrush}" 
+                            BorderThickness="1"
+                            Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    
+                    <TextBlock x:Name="UpdateStatus" 
+                               Foreground="{StaticResource TextBrush}" 
+                               Margin="0,15,0,0" FontSize="14"/>
+                </StackPanel>
+            </TabItem>
+
+            <!-- Tab 4: System Information -->
+            <TabItem Header="📊 System Info" 
+                     Background="{StaticResource ControlBackgroundBrush}" 
+                     Foreground="{StaticResource TextBrush}" 
+                     FontSize="14" FontWeight="SemiBold">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10">
+                    <TextBlock x:Name="SystemInfoText" 
+                               Foreground="{StaticResource TextBrush}" 
+                               FontSize="14" FontFamily="Consolas" 
+                               TextWrapping="Wrap"/>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab 5: Presets -->
+            <TabItem Header="🚀 Presets" 
+                     Background="{StaticResource ControlBackgroundBrush}" 
+                     Foreground="{StaticResource TextBrush}" 
+                     FontSize="14" FontWeight="SemiBold">
+                <StackPanel Margin="10">
+                    <TextBlock Text="Apply a predefined configuration:" 
+                               Foreground="{StaticResource TextBrush}" 
+                               FontSize="16" Margin="0,0,0,15"/>
+                    
+                    <Button Content="🟢 Standard (Balanced)" 
+                            x:Name="PresetStandardButton"
+                            Background="{StaticResource SuccessBrush}" 
+                            Foreground="#1E1E1E" 
+                            FontSize="14" FontWeight="Bold"
+                            Padding="15,8" Margin="0,5" 
+                            HorizontalAlignment="Left"
+                            Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    
+                    <Button Content="🟡 Minimal (Basic)" 
+                            x:Name="PresetMinimalButton"
+                            Background="{StaticResource WarningBrush}" 
+                            Foreground="#1E1E1E" 
+                            FontSize="14" FontWeight="Bold"
+                            Padding="15,8" Margin="0,5" 
+                            HorizontalAlignment="Left"
+                            Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    
+                    <Button Content="🔴 Advanced (Power User)" 
+                            x:Name="PresetAdvancedButton"
+                            Background="{StaticResource ErrorBrush}" 
+                            Foreground="{StaticResource TextBrush}" 
+                            FontSize="14" FontWeight="Bold"
+                            Padding="15,8" Margin="0,5" 
+                            HorizontalAlignment="Left"
+                            Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    
+                    <TextBlock x:Name="PresetStatus" 
+                               Foreground="{StaticResource TextBrush}" 
+                               Margin="0,15,0,0" FontSize="14"/>
+                </StackPanel>
+            </TabItem>
+
+            <!-- Tab 6: Log -->
+            <TabItem Header="📜 Log" 
+                     Background="{StaticResource ControlBackgroundBrush}" 
+                     Foreground="{StaticResource TextBrush}" 
+                     FontSize="14" FontWeight="SemiBold">
+                <StackPanel Margin="10">
+                    <Button Content="🔄 Refresh Log" 
+                            x:Name="RefreshLogButton"
+                            Background="{StaticResource AccentBrush}" 
+                            Foreground="{StaticResource TextBrush}" 
+                            FontSize="14"
+                            Padding="15,8" Margin="0,5" 
+                            HorizontalAlignment="Left"
+                            Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Height="300" Margin="0,10,0,0">
+                        <TextBlock x:Name="LogText" 
+                                   Foreground="{StaticResource TextBrush}" 
+                                   FontSize="12" FontFamily="Consolas" 
+                                   TextWrapping="Wrap"/>
+                    </ScrollViewer>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+
+        <!-- Footer -->
+        <Border Grid.Row="3" Background="{StaticResource ControlBackgroundBrush}" 
+                CornerRadius="8" Padding="10" Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <TextBlock Text="ShaneCodes Utilman v1.0.0" 
+                           Foreground="{StaticResource TextBrush}" 
+                           Opacity="0.7"/>
+                <TextBlock Text=" | " 
+                           Foreground="{StaticResource TextBrush}" 
+                           Opacity="0.7"/>
+                <TextBlock Text="MIT License" 
+                           Foreground="{StaticResource TextBrush}" 
+                           Opacity="0.7"/>
+                <TextBlock Text=" | " 
+                           Foreground="{StaticResource TextBrush}" 
+                           Opacity="0.7"/>
+                <TextBlock Text="💡 All changes are logged for transparency" 
+                           Foreground="{StaticResource AccentBrush}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

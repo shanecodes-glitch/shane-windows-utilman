@@ -1,0 +1,56 @@
+{
+  "Standard": {
+    "description": "Balanced defaults for most users",
+    "tweaks": [
+      "Disable telemetry",
+      "Show file extensions",
+      "Show hidden files",
+      "Enable dark mode"
+    ],
+    "apps": [
+      "7-Zip",
+      "Google Chrome",
+      "VLC Media Player"
+    ],
+    "settings": {
+      "update_behavior": "automatic"
+    }
+  },
+  "Minimal": {
+    "description": "Minimal changes for users who want simple setup",
+    "tweaks": [
+      "Show file extensions",
+      "Show hidden files"
+    ],
+    "apps": [
+      "7-Zip"
+    ],
+    "settings": {
+      "update_behavior": "automatic"
+    }
+  },
+  "Advanced": {
+    "description": "Deep tweaks for power users",
+    "tweaks": [
+      "Disable telemetry",
+      "Disable animations",
+      "Disable transparency effects",
+      "Disable advertising ID",
+      "Disable Cortana",
+      "Show file extensions",
+      "Show hidden files",
+      "Show super hidden files",
+      "Enable dark mode"
+    ],
+    "apps": [
+      "7-Zip",
+      "Google Chrome",
+      "Visual Studio Code",
+      "Git",
+      "Notepad++"
+    ],
+    "settings": {
+      "update_behavior": "notify"
+    }
+  }
+}
